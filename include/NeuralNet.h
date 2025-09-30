@@ -6,11 +6,46 @@
 class NeuralNet
 {
 public:
-	NeuralNet() {}
+	NeuralNet(int isize, int osize, int hsize) :_iSize(isize), _oSize(osize), _hSize(hsize) 
+	{
+		// 默认使用RELU
+		_atype = ActivationType::RELU;
+
+		_input.resize(_iSize);
+		_output.resize(_oSize);
+		_hidden.resize(_hSize);
+
+		_weight1.resize(_iSize * _hSize);
+		_weight2.resize(_oSize * _hSize);
+
+		_offset1.resize(_hSize);
+		_offset2.resize(_oSize);
+
+	}
 	~NeuralNet() {}
 
+	void SetActivation(ActivationType type) { _atype = type; }
 
-	scalar activate(scalar z) { return 0; }
+	void SetInput() {}
+	void Forward(); // 前向传播，根据输入给出输出
+	void Train();
+	void Loss();
+	static void Softmax(std::vector<scalar>& vec);
+
+private:
+	scalar activate(scalar z) {
+		switch (_atype)
+		{
+		case ActivationType::RELU:
+			return Activation::ReLU(z);
+			break;
+		case ActivationType::SIGMOID:
+			return Activation::Sigmoid(z);
+			break;
+		default:
+			break;
+		}
+	}
 
 
 private:
