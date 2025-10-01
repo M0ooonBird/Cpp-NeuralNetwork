@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<!-- 匹配所有 Vector<T> 实例 -->
+	<Type Name="VectorT&lt;*&gt;">
+		<!-- 顶层显示：显示元素数量 -->
+		<DisplayString>{{ size = {_len} }}</DisplayString>
+
+		<Expand>
+			<!-- 显示长度信息 -->
+			<Item Name="[长度]">_len</Item>
+
+			<!-- 核心：以数组形式显示元素 -->
+			<ArrayItems>
+				<Size>_len</Size>
+				<!-- 数组大小 -->
+				<ValuePointer>_data</ValuePointer>
+				<!-- 数据起始指针 -->
+			</ArrayItems>
+		</Expand>
+	</Type>
+</AutoVisualizer>

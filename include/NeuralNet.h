@@ -2,35 +2,64 @@
 #include <vector>
 #include "FloatType.h"
 #include "Activation.h"
+#include "Matrix.h"
+#include "Vector.h"
 
+using iType = unsigned char;
 class NeuralNet
 {
+	
 public:
 	NeuralNet(int isize, int osize, int hsize) :_iSize(isize), _oSize(osize), _hSize(hsize) 
 	{
 		// 默认使用RELU
 		_atype = ActivationType::RELU;
 
-		_input.resize(_iSize);
-		_output.resize(_oSize);
-		_hidden.resize(_hSize);
+		_input.Resize(_iSize);
 
-		_weight1.resize(_iSize * _hSize);
-		_weight2.resize(_oSize * _hSize);
+		_output.Resize(_oSize);
+		_hidden.Resize(_hSize);
+		_hidden_a.Resize(_hSize);
 
-		_offset1.resize(_hSize);
-		_offset2.resize(_oSize);
+		_weight1.Resize(_hSize, _iSize);
+		_weight2.Resize(_oSize, _hSize);
+
+		_offset1.Resize(_hSize);
+		_offset2.Resize(_oSize);
 
 	}
 	~NeuralNet() {}
 
+	// 设置激活函数类型
 	void SetActivation(ActivationType type) { _atype = type; }
 
-	void SetInput() {}
-	void Forward(); // 前向传播，根据输入给出输出
+	// 导入所有训练数据
+	void LoadTrainData(std::vector<iMat>&& train_data,
+		std::vector<iType>&& train_label);
+	void SetTrainParameter(int train_num, int batch, int epoch) 
+	{
+		_trainNum = train_num;
+		_batchSize = batch;
+		_epochNum = epoch;
+	}
+	void SetTestParameter(int t)
+	{
+		_testNum = t;
+	}
+
+	// 设置输入Vec
+	void SetInput(const iType* data);
+	// 前向传播，根据输入给出输出
+	void Forward(bool isTrain = false); 
+
+	// 随机初始化权重
+	void InitWeights();
 	void Train();
+	void TrainEpoch();
+
+	void Test();
 	void Loss();
-	static void Softmax(std::vector<scalar>& vec);
+	static void Softmax(Vector& vec);
 
 private:
 	scalar activate(scalar z) {
@@ -49,21 +78,36 @@ private:
 
 
 private:
+	scalar _alpha = 0.0002;
+	scalar _beta = 0.9;
+	scalar _gamma = 0.999;
+
 	int _iSize;	//input
 	int _oSize; //output
-
 	int _hSize; // hidden layer
 
 	ActivationType _atype;
 
-	std::vector<scalar> _input;
-	std::vector<scalar> _hidden;
-	std::vector<scalar> _output;
+	Vector _input;
+	Vector _hidden;
+	Vector _hidden_a;
+	Vector _output;
 
-	std::vector<scalar> _weight1;
-	std::vector<scalar> _offset1;
+	Matrix _weight1;
+	Vector _offset1;
 
-	std::vector<scalar> _weight2;
-	std::vector<scalar> _offset2;
+	Matrix _weight2;
+	Vector _offset2;
 
+	std::vector<iMat> _train_data;
+	std::vector<iType> _train_label;
+
+	std::vector<iMat> _test_data;
+	std::vector<iType> _test_label;
+
+	int _trainNum;
+	int _batchSize;
+	int _epochNum;
+
+	int _testNum;
 };
