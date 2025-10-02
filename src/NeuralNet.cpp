@@ -19,7 +19,9 @@ void NeuralNet::SetInput(const iType* data)
 
 void NeuralNet::Forward(bool isTrain)
 {
-	_hidden = _offset1 + _weight1 * _input;
+	Vector b1(_Parameters.data()+ idx_b1, _hSize);
+	Matrix w1(_Parameters.data()+ idx_w1, _hSize, _iSize);
+	_hidden = b1 + w1 * _input;
 
 	// 激活函数
 	#pragma omp parallel for num_threads(threads_num)
@@ -27,8 +29,9 @@ void NeuralNet::Forward(bool isTrain)
 	{
 		_hidden_a[i] = activate(_hidden[i]);
 	}
-
-	_output = _offset2 + _weight2 * _hidden_a;
+	Vector b2(_Parameters.data() + idx_b2, _oSize);
+	Matrix w2(_Parameters.data() + idx_w2, _oSize, _hSize);
+	_output = b2 + w2 * _hidden_a;
 }
 
 void NeuralNet::InitWeights()
@@ -39,14 +42,16 @@ void NeuralNet::InitWeights()
 	// He初始化
 	double std_dev1 = std::sqrt(2.0 / _iSize);
 	std::normal_distribution<double> normal1(0.0, std_dev1);
-	for (auto& wi : _weight1) {
-		wi = normal1(gen);
+	for (int i = _hSize; i < _hSize + _hSize * _iSize; i++)
+	{
+		_Parameters[i] = normal1(gen);  // w1
 	}
 
 	double std_dev2 = std::sqrt(2.0 / _hSize);
 	std::normal_distribution<double> normal2(0.0, std_dev2);
-	for (auto& wi : _weight2) {
-		wi = normal2(gen);
+	for (int i = _hSize + _hSize * _iSize + _oSize; i < _Parameters.Size(); i++)
+	{
+		_Parameters[i] = normal2(gen);  // w2
 	}
 }
 void NeuralNet::Train() 
@@ -67,15 +72,9 @@ void NeuralNet::TrainEpoch()
 	int n = (_trainNum - 1) / _batchSize + 1;
 
 	// 1阶矩
-	Vector Gradm_b2(_oSize);
-	Vector Gradm_b1(_hSize);
-	Matrix Gradm_w2(_oSize, _hSize);
-	Matrix Gradm_w1(_hSize, _iSize);
+	Vector Gradm_p(_Parameters.Size());
 	// 2阶矩
-	Vector Gradv_b2(_oSize);
-	Vector Gradv_b1(_hSize);
-	Matrix Gradv_w2(_oSize, _hSize);
-	Matrix Gradv_w1(_hSize, _iSize);
+	Vector Gradv_p(_Parameters.Size());
 
 	//每一轮训练n次，每次取一块batch
 	for (int t = 0; t < n; t++)
@@ -83,10 +82,11 @@ void NeuralNet::TrainEpoch()
 		printf("batch: %d,\t", t);
 		scalar Loss = 0;
 		// batch中依次取样本
-		Vector Grad_b2(_oSize); 
-		Vector Grad_b1(_hSize);
-		Matrix Grad_w2(_oSize, _hSize);
-		Matrix Grad_w1(_hSize, _iSize);
+		Vector Grad_p(_Parameters.Size());
+		Vector Grad_b2(Grad_p.data() + idx_b2, _oSize);
+		Vector Grad_b1(Grad_p.data() + idx_b1, _hSize);
+		Matrix Grad_w2(Grad_p.data() + idx_w2, _oSize, _hSize);
+		Matrix Grad_w1(Grad_p.data() + idx_w1, _hSize, _iSize);
 
 		for (int i = 0; i < _batchSize; i++)
 		{
@@ -104,7 +104,8 @@ void NeuralNet::TrainEpoch()
 			Grad_b2 += grad_b2i;
 			Grad_w2 += Cross(grad_b2i , _hidden_a);
 
-			Vector grad_b1i = _weight2.GetTransPose() * grad_b2i;
+			Matrix w2(_Parameters.data() + idx_w2, _oSize, _hSize);
+			Vector grad_b1i = w2.GetTransPose() * grad_b2i;
 			for (int e = 0; e < _hSize; e++)
 			{
 				if(_hidden[e] < 0) // ReLU 特性
@@ -113,37 +114,22 @@ void NeuralNet::TrainEpoch()
 			Grad_b1 += grad_b1i;
 			Grad_w1 += Cross(grad_b1i, _input);
 		}
+		Gradm_p = _beta * Gradm_p + (1 - _beta) * Grad_p;
+		Gradv_p = _gamma * Gradv_p + (1 - _gamma) * Square(Grad_p);
 
-		Gradm_b2 = _beta * Gradm_b2 + (1 - _beta) * Grad_b2;
-		Gradm_b1 = _beta * Gradm_b1 + (1 - _beta) * Grad_b1;
-		Gradm_w2 = _beta * Gradm_w2 + (1 - _beta) * Grad_w2;
-		Gradm_w1 = _beta * Gradm_w1 + (1 - _beta) * Grad_w1;
-		
-		Gradv_b2 = _gamma * Gradv_b2 + (1 - _gamma) * Square(Grad_b2);
-		Gradv_b1 = _gamma * Gradv_b1 + (1 - _gamma) * Square(Grad_b1);
-		Gradv_w2 = _gamma * Gradv_w2 + (1 - _gamma) * Square(Grad_w2);
-		Gradv_w1 = _gamma * Gradv_w1 + (1 - _gamma) * Square(Grad_w1);
-		
-		auto r_Gradm_w2 = Gradm_w2 / (1 - std::pow(_beta, t + 1));
-		auto r_Gradv_w2 = Gradv_w2 / (1 - std::pow(_gamma, t + 1));
+		auto r_Gradm = Gradm_p / (1 - std::pow(_beta, t + 1));
+		auto r_Gradv = Gradv_p / (1 - std::pow(_gamma, t + 1));
 
-		auto r_Gradm_w1 = Gradm_w1 / (1 - std::pow(_beta, t + 1));
-		auto r_Gradv_w1 = Gradv_w1 / (1 - std::pow(_gamma, t + 1));
-
-		auto r_Gradm_b2 = Gradm_b2 / (1 - std::pow(_beta, t + 1));
-		auto r_Gradv_b2 = Gradv_b2 / (1 - std::pow(_gamma, t + 1));
-
-		auto r_Gradm_b1 = Gradm_b1 / (1 - std::pow(_beta, t + 1));
-		auto r_Gradv_b1 = Gradv_b1 / (1 - std::pow(_gamma, t + 1));
 		// 随机梯度下降 SGD，更新参数
-		_weight2 -= _alpha * r_Gradm_w2 / (Sqrt(r_Gradv_w2));
-		_weight1 -= _alpha * r_Gradm_w1 / (Sqrt(r_Gradv_w1));
-		_offset2 -= _alpha * r_Gradm_b2 / (Sqrt(r_Gradv_b2));
-		_offset1 -= _alpha * r_Gradm_b1 / (Sqrt(r_Gradv_b1));
+		_Parameters -= _alpha * r_Gradm / Sqrt(r_Gradv);
 
 		printf("Loss = %f\n", Loss/_batchSize);
-
 	}
+}
+
+void NeuralNet::SetNNParameter(const std::vector<scalar>& para_data)
+{
+	memcpy(_Parameters.data(), para_data.data(), _Parameters.Size() * sizeof(scalar));
 }
 
 void NeuralNet::Loss()
@@ -168,13 +154,13 @@ void NeuralNet::Test()
 	int correct = 0;
 	for (int i = 0; i < _testNum; i++)
 	{
-		int idx = _shuffledIdx[_trainNum + 1000 + i];
+		int idx = _shuffledIdx[i];
 
-		SetInput(_train_data[idx].data()); 
+		SetInput(_test_data[idx].data()); 
 		Forward(false);//向前传播，记录中间值
 		Softmax(_output); // output 所有元素约化到0-1之间
 		
-		int yi = _train_label[idx]; // 样本对应的实际数字
+		int yi = _test_label[idx]; // 样本对应的实际数字
 		int y = GetMaxvalueIdx(_output.data(), _oSize);
 		if (y == yi)
 		{
@@ -221,17 +207,35 @@ void NeuralNet::Softmax(Vector& vec)
 	}
 }
 
-void NeuralNet::LoadTrainData(std::vector<iMat>&& train_data, 
-	std::vector<iType>&& train_label)
+void NeuralNet::LoadData(
+	std::vector<iMat>&& data, 
+	std::vector<iType>&& label, 
+	NN_Mode mode)
 {
-	_train_data = std::move(train_data);
-	_train_label = std::move(train_label);
+	if (mode == NN_Mode::TRAIN)
+	{
+		_train_data = std::move(data);
+		_train_label = std::move(label);
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	_shuffledIdx.resize(_train_data.size());
-	for (int i = 0; i < _shuffledIdx.size(); ++i) {
-		_shuffledIdx[i] = i;
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		_shuffledIdx.resize(_train_data.size());
+		for (int i = 0; i < _shuffledIdx.size(); ++i) {
+			_shuffledIdx[i] = i;
+		}
+		std::shuffle(_shuffledIdx.begin(), _shuffledIdx.end(), gen);
 	}
-	std::shuffle(_shuffledIdx.begin(), _shuffledIdx.end(), gen);
+	else
+	{
+		_test_data = std::move(data);
+		_test_label = std::move(label);
+
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		_shuffledIdx.resize(_test_data.size());
+		for (int i = 0; i < _shuffledIdx.size(); ++i) {
+			_shuffledIdx[i] = i;
+		}
+		std::shuffle(_shuffledIdx.begin(), _shuffledIdx.end(), gen);
+	}
 }

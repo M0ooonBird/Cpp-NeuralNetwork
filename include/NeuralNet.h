@@ -5,7 +5,13 @@
 #include "Matrix.h"
 #include "Vector.h"
 
-using iType = unsigned char;
+enum class NN_Mode
+{
+	TRAIN,
+	TEST
+};
+
+
 class NeuralNet
 {
 	
@@ -21,12 +27,12 @@ public:
 		_hidden.Resize(_hSize);
 		_hidden_a.Resize(_hSize);
 
-		_weight1.Resize(_hSize, _iSize);
-		_weight2.Resize(_oSize, _hSize);
-
-		_offset1.Resize(_hSize);
-		_offset2.Resize(_oSize);
-
+		idx_b1 = 0;
+		idx_w1 = idx_b1 + _hSize;
+		idx_b2 = idx_w1 + _hSize * _iSize;
+		idx_w2 = idx_b2 + _oSize;
+		_Parameters.Resize(_hSize + _hSize * _iSize + _oSize + _oSize * _hSize);
+		_para_size = _Parameters.Size();
 	}
 	~NeuralNet() {}
 
@@ -34,18 +40,19 @@ public:
 	void SetActivation(ActivationType type) { _atype = type; }
 
 	// 导入所有训练数据
-	void LoadTrainData(std::vector<iMat>&& train_data,
-		std::vector<iType>&& train_label);
+	void LoadData(std::vector<iMat>&& data,
+		std::vector<iType>&& label, NN_Mode mode);
 	void SetTrainParameter(int train_num, int batch, int epoch) 
 	{
 		_trainNum = train_num;
 		_batchSize = batch;
 		_epochNum = epoch;
 	}
-	void SetTestParameter(int t)
+	void SetTestNum(int t)
 	{
 		_testNum = t;
 	}
+	void SetNNParameter(const std::vector<scalar>& data);
 
 	// 设置输入Vec
 	void SetInput(const iType* data);
@@ -60,7 +67,12 @@ public:
 	void Test();
 	void Test(const iMat& image);
 	void Loss();
+	int GetParaSize() { return _para_size; }
+
 	static void Softmax(Vector& vec);
+
+	Vector _Parameters;
+
 
 private:
 	scalar activate(scalar z) {
@@ -77,8 +89,6 @@ private:
 		}
 	}
 
-
-private:
 	scalar _alpha = 0.0002;
 	scalar _beta = 0.9;
 	scalar _gamma = 0.999;
@@ -94,11 +104,11 @@ private:
 	Vector _hidden_a;
 	Vector _output;
 
-	Matrix _weight1;
-	Vector _offset1;
-
-	Matrix _weight2;
-	Vector _offset2;
+	int idx_b1;
+	int idx_w1;
+	int idx_b2;
+	int idx_w2;
+	int _para_size;
 
 	std::vector<int> _shuffledIdx;
 	std::vector<iMat> _train_data;

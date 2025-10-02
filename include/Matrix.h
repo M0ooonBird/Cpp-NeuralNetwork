@@ -27,7 +27,7 @@ public:
 		for (int i = 0; i < row * col; i++)
 			_data[i] = val;
 	}
-	MatrixT(int row, int col, T* data) : _row(row), _col(col)
+	MatrixT(T* data, int row, int col) : _row(row), _col(col)
 	{
 		_data = data;
 		_isOwner = false; // 不是数据的拥有者
