@@ -40,7 +40,7 @@ std::vector<scalar> load_parameters_binary(const std::string& filename) {
     inFile.read(reinterpret_cast<char*>(params.data()), num_params * sizeof(scalar));
 
     inFile.close();
-    std::cout << "Parameters loaded from " << filename << " successfully." << std::endl;
+    //std::cout << "Parameters loaded from " << filename << " successfully." << std::endl;
     return params;
 }
 
