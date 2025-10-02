@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <random>
 #include "Activation.h"
 #include "NeuralNet.h"
 #include "MathFunction.h"
@@ -67,7 +68,7 @@ int main(int argc, const char* argv[])
     std::vector<iMat> train_data = read_mnist_images("train-images.idx3-ubyte");
     std::vector<iType> train_label = read_mnist_labels("train-labels.idx1-ubyte");
         
-    int train_num = 30000; // 训练样本数量
+    int train_num = 40000; // 训练样本数量
     int batch = 128;
     int epoch = 15; // 训练轮数
 

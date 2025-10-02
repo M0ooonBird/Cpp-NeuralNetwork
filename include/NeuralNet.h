@@ -99,9 +99,9 @@ private:
 	Matrix _weight2;
 	Vector _offset2;
 
+	std::vector<int> _shuffledIdx;
 	std::vector<iMat> _train_data;
 	std::vector<iType> _train_label;
-
 	std::vector<iMat> _test_data;
 	std::vector<iType> _test_label;
 

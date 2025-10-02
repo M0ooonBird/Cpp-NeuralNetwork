@@ -36,9 +36,9 @@ void NeuralNet::InitWeights()
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
+	// He初始化
 	double std_dev1 = std::sqrt(2.0 / _iSize);
 	std::normal_distribution<double> normal1(0.0, std_dev1);
-	// 初始化权重
 	for (auto& wi : _weight1) {
 		wi = normal1(gen);
 	}
@@ -90,7 +90,7 @@ void NeuralNet::TrainEpoch()
 
 		for (int i = 0; i < _batchSize; i++)
 		{
-			int idx = t * _batchSize + i;
+			int idx = _shuffledIdx[t * _batchSize + i];
 
 			SetInput(_train_data[idx].data());
 			Forward(true);//向前传播，记录中间值
@@ -168,7 +168,7 @@ void NeuralNet::Test()
 	int correct = 0;
 	for (int i = 0; i < _testNum; i++)
 	{
-		int idx = _trainNum + 1000 + i;
+		int idx = _shuffledIdx[_trainNum + 1000 + i];
 
 		SetInput(_train_data[idx].data()); 
 		Forward(false);//向前传播，记录中间值
@@ -214,4 +214,12 @@ void NeuralNet::LoadTrainData(std::vector<iMat>&& train_data,
 {
 	_train_data = std::move(train_data);
 	_train_label = std::move(train_label);
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	_shuffledIdx.resize(_train_data.size());
+	for (int i = 0; i < _shuffledIdx.size(); ++i) {
+		_shuffledIdx[i] = i;
+	}
+	std::shuffle(_shuffledIdx.begin(), _shuffledIdx.end(), gen);
 }
