@@ -10,28 +10,30 @@ void NeuralNet::SetInput(const iType* data)
 	#pragma omp parallel for num_threads(threads_num)
 	for (int i = 0; i < _iSize; i++)
 	{
-		_input[i] = data[i]; // 0-255
+		_H0[i] = data[i]; // 0-255
 		// 归一化
-		_input[i] /= 255.0;
-		_input[i] = _input[i] * 2 - 1;
+		_H0[i] /= 255.0;
+		_H0[i] = _H0[i] * 2 - 1;
 	}
 }
 
 void NeuralNet::Forward(bool isTrain)
 {
-	Vector b1(_Parameters.data()+ idx_b1, _hSize);
-	Matrix w1(_Parameters.data()+ idx_w1, _hSize, _iSize);
-	_hidden = b1 + w1 * _input;
+	Vector b1(_Parameters.data()+ idx_b0, _hSize);
+	Matrix w1(_Parameters.data()+ idx_w0, _hSize, _iSize);
+	_F1 = b1 + w1 * _H0;
 
 	// 激活函数
 	#pragma omp parallel for num_threads(threads_num)
 	for (int i = 0; i < _hSize; i++)
 	{
-		_hidden_a[i] = activate(_hidden[i]);
+		_H1[i] = activate(_F1[i]);
 	}
-	Vector b2(_Parameters.data() + idx_b2, _oSize);
-	Matrix w2(_Parameters.data() + idx_w2, _oSize, _hSize);
-	_output = b2 + w2 * _hidden_a;
+	Vector b2(_Parameters.data() + idx_b1, _oSize);
+	Matrix w2(_Parameters.data() + idx_w1, _oSize, _hSize);
+	_H2 = b2 + w2 * _H1;
+
+	Softmax(_H2); // output 所有元素约化到0-1之间
 }
 
 void NeuralNet::InitWeights()
@@ -83,10 +85,10 @@ void NeuralNet::TrainEpoch()
 		scalar Loss = 0;
 		// batch中依次取样本
 		Vector Grad_p(_Parameters.Size());
-		Vector Grad_b2(Grad_p.data() + idx_b2, _oSize);
-		Vector Grad_b1(Grad_p.data() + idx_b1, _hSize);
-		Matrix Grad_w2(Grad_p.data() + idx_w2, _oSize, _hSize);
-		Matrix Grad_w1(Grad_p.data() + idx_w1, _hSize, _iSize);
+		Vector Grad_b2(Grad_p.data() + idx_b1, _oSize);
+		Vector Grad_b1(Grad_p.data() + idx_b0, _hSize);
+		Matrix Grad_w2(Grad_p.data() + idx_w1, _oSize, _hSize);
+		Matrix Grad_w1(Grad_p.data() + idx_w0, _hSize, _iSize);
 
 		for (int i = 0; i < _batchSize; i++)
 		{
@@ -94,25 +96,25 @@ void NeuralNet::TrainEpoch()
 
 			SetInput(_train_data[idx].data());
 			Forward(true);//向前传播，记录中间值
-			Softmax(_output); // output 所有元素约化到0-1之间
+			
 			int y = _train_label[idx]; // 样本对应的实际数字
-			Loss += -std::log(_output[y]);
+			Loss += -std::log(_H2[y]);
 
-			Vector grad_b2i = _output;
+			Vector grad_b2i = _H2;
 			grad_b2i(y) -= 1;
 
 			Grad_b2 += grad_b2i;
-			Grad_w2 += Cross(grad_b2i , _hidden_a);
+			Grad_w2 += Cross(grad_b2i , _H1);
 
-			Matrix w2(_Parameters.data() + idx_w2, _oSize, _hSize);
+			Matrix w2(_Parameters.data() + idx_w1, _oSize, _hSize);
 			Vector grad_b1i = w2.GetTransPose() * grad_b2i;
 			for (int e = 0; e < _hSize; e++)
 			{
-				if(_hidden[e] < 0) // ReLU 特性
+				if(_F1[e] < 0) // ReLU 特性
 					grad_b1i[e] = 0;
 			}
 			Grad_b1 += grad_b1i;
-			Grad_w1 += Cross(grad_b1i, _input);
+			Grad_w1 += Cross(grad_b1i, _H0);
 		}
 		Gradm_p = _beta * Gradm_p + (1 - _beta) * Grad_p;
 		Gradv_p = _gamma * Gradv_p + (1 - _gamma) * Square(Grad_p);
@@ -142,10 +144,9 @@ void NeuralNet::Loss()
 	{
 		//SetInput();
 		this->Forward();
-		Softmax(_output); // output 所有元素约化到0-1之间
 
 		int yi = 0; // 数据输出 \in {0,1,2,...K-1}
-		Li += -std::log(_output[yi]);
+		Li += -std::log(_H2[yi]);
 	}
 }
 
@@ -158,10 +159,9 @@ void NeuralNet::Test()
 
 		SetInput(_test_data[idx].data()); 
 		Forward(false);//向前传播，记录中间值
-		Softmax(_output); // output 所有元素约化到0-1之间
 		
 		int yi = _test_label[idx]; // 样本对应的实际数字
-		int y = GetMaxvalueIdx(_output.data(), _oSize);
+		int y = GetMaxvalueIdx(_H2.data(), _oSize);
 		if (y == yi)
 		{
 			correct++;
@@ -176,15 +176,15 @@ void NeuralNet::Test(const iMat& image)
 	#pragma omp parallel for num_threads(threads_num)
 	for (int i = 0; i < _iSize; i++)
 	{
-		_input[i] = data[i]; // 0-255
+		_H0[i] = data[i]; // 0-255
 		// 归一化
-		_input[i] /= 255.0;
-		_input[i] = _input[i] * 2 - 1;
+		_H0[i] /= 255.0;
+		_H0[i] = _H0[i] * 2 - 1;
 	}
 
 	Forward(false);
-	Softmax(_output);
-	int y = GetMaxvalueIdx(_output.data(), _oSize);
+
+	int y = GetMaxvalueIdx(_H2.data(), _oSize);
 
 	printf("预测结果为：%d\n", y);
 }

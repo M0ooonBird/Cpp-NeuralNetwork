@@ -21,16 +21,15 @@ public:
 		// 默认使用RELU
 		_atype = ActivationType::RELU;
 
-		_input.Resize(_iSize);
+		_H0.Resize(_iSize);
+		_F1.Resize(_hSize);
+		_H1.Resize(_hSize);
+		_H2.Resize(_oSize);
 
-		_output.Resize(_oSize);
-		_hidden.Resize(_hSize);
-		_hidden_a.Resize(_hSize);
-
-		idx_b1 = 0;
-		idx_w1 = idx_b1 + _hSize;
-		idx_b2 = idx_w1 + _hSize * _iSize;
-		idx_w2 = idx_b2 + _oSize;
+		idx_b0 = 0;
+		idx_w0 = idx_b0 + _hSize;
+		idx_b1 = idx_w0 + _hSize * _iSize;
+		idx_w1 = idx_b1 + _oSize;
 		_Parameters.Resize(_hSize + _hSize * _iSize + _oSize + _oSize * _hSize);
 		_para_size = _Parameters.Size();
 	}
@@ -99,15 +98,15 @@ private:
 
 	ActivationType _atype;
 
-	Vector _input;
-	Vector _hidden;
-	Vector _hidden_a;
-	Vector _output;
+	Vector _H0;
+	Vector _F1;
+	Vector _H1;
+	Vector _H2;
 
+	int idx_b0;
+	int idx_w0;
 	int idx_b1;
 	int idx_w1;
-	int idx_b2;
-	int idx_w2;
 	int _para_size;
 
 	std::vector<int> _shuffledIdx;
