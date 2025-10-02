@@ -11,9 +11,9 @@
 int main(int argc, const char* argv[])
 {
     
-    int input = 28 * 28;    // 图片大小
-    int output = 10;        // 预测 0,1,...,9
-    int hsize = 256;        // 隐藏层大小
+    const int input = 28 * 28;    // 图片大小
+    const int output = 10;        // 预测 0,1,...,9
+    const int hsize = 256;        // 隐藏层大小
     NeuralNet* nn = new NeuralNet(input, output, hsize);
 
 #if 0   // 训练模式，自动训练NN参数

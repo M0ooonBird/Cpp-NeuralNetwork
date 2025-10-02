@@ -3,7 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include "MathFunction.h"
 
-// 保存参数到二进制文件
+
 void save_parameters_binary(const scalar* params, int size, const std::string& filename) {
     std::ofstream outFile(filename, std::ios::binary);
     if (!outFile.is_open()) {
@@ -11,11 +11,11 @@ void save_parameters_binary(const scalar* params, int size, const std::string& f
         return;
     }
 
-    // 同样，先写入参数的数量
+    // 写入参数的数量
     size_t num_params = size;
     outFile.write(reinterpret_cast<const char*>(&num_params), sizeof(num_params));
 
-    // 然后写入所有参数数据
+    // 写入所有参数数据
     outFile.write(reinterpret_cast<const char*>(params), size * sizeof(scalar));
 
     outFile.close();
@@ -31,19 +31,18 @@ std::vector<scalar> load_parameters_binary(const std::string& filename) {
         return params;
     }
 
-    // 先读取参数的数量
+    // 读取参数的数量
     size_t num_params;
     inFile.read(reinterpret_cast<char*>(&num_params), sizeof(num_params));
     params.resize(num_params);
 
-    // 然后读取所有参数数据
+    // 读取所有参数数据
     inFile.read(reinterpret_cast<char*>(params.data()), num_params * sizeof(scalar));
 
     inFile.close();
     std::cout << "Parameters loaded from " << filename << " successfully." << std::endl;
     return params;
 }
-
 
 
 
@@ -68,7 +67,7 @@ iMat preprocess_image(const std::string& input_path) {
     cv::Mat binary_img;
     // THRESH_BINARY: 像素值 > 127 的变为 255 (白), 否则变为 0 (黑)
     // THRESH_OTSU: 自动寻找最佳阈值，效果更好
-    //cv::threshold(resized_img, binary_img, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    cv::threshold(resized_img, binary_img, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
     // (可选) 显示处理后的图像，用于调试
      //cv::imshow("Processed Image", resized_img);
@@ -79,14 +78,13 @@ iMat preprocess_image(const std::string& input_path) {
     for (int i = 0; i < 28; ++i) {
         for (int j = 0; j < 28; ++j) {
             // binary_img 的数据类型是 uchar (0-255)
-            uchar pixel_value = static_cast<uchar>(resized_img.at<uchar>(i, j));
+            uchar pixel_value = static_cast<uchar>(binary_img.at<uchar>(i, j));
             input_vector(i, j) = pixel_value;
         }
     }
 
     return input_vector;
 }
-
 
 
 std::vector<iMat> read_mnist_images(const std::string& file_path) {
