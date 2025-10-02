@@ -4,6 +4,11 @@ project(MyNN LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(OpenCV_DIR "C:/opencv/build")
+find_package(OpenCV REQUIRED)
+message(STATUS "OpenCV version: ${OpenCV_VERSION}")  # 打印版本（可选）
+
+
 
 file(GLOB_RECURSE SOURCES
     "src/*.cpp"    # C++ 源文件
@@ -18,6 +23,11 @@ source_group("Include" FILES ${HEADER_FILES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+${OpenCV_INCLUDE_DIRS}
+)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC
+${OpenCV_LIBS}
 )
 
 target_sources(${PROJECT_NAME} PRIVATE

@@ -58,6 +58,7 @@ public:
 	void TrainEpoch();
 
 	void Test();
+	void Test(const iMat& image);
 	void Loss();
 	static void Softmax(Vector& vec);
 

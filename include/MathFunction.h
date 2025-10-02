@@ -31,3 +31,5 @@ int delta(int i, int j);
 
 // 反转整数字节序（大端转小端）
 int ReverseInt(int i);
+
+int GetMaxvalueIdx(const scalar* v, int size);

@@ -17,6 +17,19 @@ int ReverseInt(int i) {
 	return (ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4;
 }
 
+int GetMaxvalueIdx(const scalar* v, int size) 
+{
+	int y = 0;
+	// 从第二个元素开始遍历
+	for (int e = 1; e < size; ++e) {
+		if (v[e] > v[y]) {
+			y = e; // 如果找到更大的元素，更新下标
+		}
+	}
+	return y;
+}
+
+
 template <typename T>
 T Dot(const VectorT<T>& vec1, const VectorT<T>& vec2)
 {

@@ -175,20 +175,32 @@ void NeuralNet::Test()
 		Softmax(_output); // output 所有元素约化到0-1之间
 		
 		int yi = _train_label[idx]; // 样本对应的实际数字
-
-		int y = 0;
-		// 从第二个元素开始遍历
-		for (size_t e = 1; e < _oSize; ++e) {
-			if (_output[e] > _output[y]) {
-				y = e; // 如果找到更大的元素，更新下标
-			}
-		}
+		int y = GetMaxvalueIdx(_output.data(), _oSize);
 		if (y == yi)
 		{
 			correct++;
 		}
 	}
 	std::cout << "正确率：" << (double)correct / _testNum << std::endl;
+}
+
+void NeuralNet::Test(const iMat& image)
+{
+	auto data = image.data();
+	#pragma omp parallel for num_threads(threads_num)
+	for (int i = 0; i < _iSize; i++)
+	{
+		_input[i] = data[i]; // 0-255
+		// 归一化
+		_input[i] /= 255.0;
+		_input[i] = _input[i] * 2 - 1;
+	}
+
+	Forward(false);
+	Softmax(_output);
+	int y = GetMaxvalueIdx(_output.data(), _oSize);
+
+	printf("预测结果为：%d\n", y);
 }
 
 void NeuralNet::Softmax(Vector& vec)
