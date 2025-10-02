@@ -44,6 +44,7 @@ public:
 	MatrixT(MatrixT<T>&& mat) noexcept
 		: _row(mat._row), _col(mat._col)
 	{
+		_isOwner = mat._isOwner;
 		_data = mat._data;
 		mat._data = nullptr;
 		mat._row = 0;
@@ -53,12 +54,11 @@ public:
 	~MatrixT() {
 		if (!_isOwner)
 		{
-			_data = nullptr;
 			_row = 0;
 			_col = 0;
 			return;
 		}
-		if (_data != nullptr)
+		else if (_data != nullptr)
 		{
 			delete[] _data;
 			_data = nullptr;

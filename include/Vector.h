@@ -40,6 +40,7 @@ public:
 	VectorT(VectorT<T>&& vec) noexcept
 		: _len(vec._len)
 	{
+		_isOwner = vec._isOwner;
 		_data = vec._data;
 		vec._data = nullptr;
 		vec._len = 0;
@@ -48,11 +49,10 @@ public:
 	~VectorT() {
 		if (!_isOwner)
 		{
-			_data = nullptr;
 			_len = 0;
 			return;
 		}
-		if (_data != nullptr)
+		else if (_data != nullptr)
 		{
 			delete[] _data;
 			_data = nullptr;
