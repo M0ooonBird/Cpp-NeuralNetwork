@@ -16,7 +16,7 @@ int main(int argc, const char* argv[])
     const int hsize = 256;        // 隐藏层大小
     NeuralNet* nn = new NeuralNet(input, output, hsize);
 
-#if 0   // 训练模式，自动训练NN参数
+#if 1   // 训练模式，自动训练NN参数
     int train_num = 40000;  // 训练样本数量
     int batch = 128;        // 批次大小
     int epoch = 18;         // 训练轮数
@@ -31,6 +31,14 @@ int main(int argc, const char* argv[])
     save_parameters_binary(nn->_Parameters.data(), nn->GetParaSize(), "parameter.dat");
 
     printf("训练完毕！\n");
+
+    // 导入测试集
+    std::vector<iMat> test_data = read_mnist_images("t10k-images.idx3-ubyte");
+    std::vector<iType> test_label = read_mnist_labels("t10k-labels.idx1-ubyte");
+    nn->LoadData(std::move(test_data), std::move(test_label), NN_Mode::TEST);
+    int test_num = 5000;
+    nn->SetTestNum(test_num);
+    nn->Test();
 
 #else   // 直接导入参数 (NN尺寸须匹配)
     auto para =  load_parameters_binary("parameter.dat");
