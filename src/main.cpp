@@ -13,13 +13,12 @@ int main(int argc, const char* argv[])
     
     const int input = 28 * 28;    // 图片大小
     const int output = 10;        // 预测 0,1,...,9
-    const int hsize = 256;        // 隐藏层大小
-    NeuralNet* nn = new NeuralNet(input, output, hsize);
+    NeuralNet* nn = new NeuralNet(3, { input, 256,128,64,output });
 
 #if 1   // 训练模式，自动训练NN参数
     int train_num = 40000;  // 训练样本数量
     int batch = 128;        // 批次大小
-    int epoch = 18;         // 训练轮数
+    int epoch = 5;         // 训练轮数
     nn->SetTrainParameter(train_num, batch, epoch);
 
     // 导入训练集 一共60000个

@@ -16,22 +16,33 @@ class NeuralNet
 {
 	
 public:
-	NeuralNet(int isize, int osize, int hsize) :_iSize(isize), _oSize(osize), _hSize(hsize) 
+	NeuralNet(int L, const std::vector<int>& LSizes) :_L(L),_LSizes(LSizes)
 	{
 		// 默认使用RELU
 		_atype = ActivationType::RELU;
+ 
+		_H.resize(L + 2);
+		_F.resize(L + 2);
 
-		_H0.Resize(_iSize);
-		_F1.Resize(_hSize);
-		_H1.Resize(_hSize);
-		_H2.Resize(_oSize);
+		for (int i = 0; i < L + 2; i++)
+		{
+			_H[i].Resize(_LSizes[i]);
+			_F[i].Resize(_LSizes[i]);
+		}
 
-		idx_b0 = 0;
-		idx_w0 = idx_b0 + _hSize;
-		idx_b1 = idx_w0 + _hSize * _iSize;
-		idx_w1 = idx_b1 + _oSize;
-		_Parameters.Resize(_hSize + _hSize * _iSize + _oSize + _oSize * _hSize);
-		_para_size = _Parameters.Size();
+		_idx_b.resize(L + 1);
+		_idx_w.resize(L + 1);
+		_idx_b[0] = 0;
+		_idx_w[0] = _LSizes[1];
+		for (int i = 1; i <= L; i++)
+		{
+			_idx_b[i] = _idx_w[i - 1] + LSizes[i] * LSizes[i - 1];
+			_idx_w[i] = _idx_b[i] + _LSizes[i + 1];
+		}
+		
+		_para_size = _idx_w[L] + _LSizes[L + 1] * _LSizes[L];
+		_Parameters.Resize(_para_size);
+
 	}
 	~NeuralNet() {}
 
@@ -92,22 +103,17 @@ private:
 	scalar _beta = 0.9;
 	scalar _gamma = 0.999;
 
-	int _iSize;	//input
-	int _oSize; //output
-	int _hSize; // hidden layer
+	int _L;
+	std::vector<int> _LSizes;
 
 	ActivationType _atype;
 
-	Vector _H0;
-	Vector _F1;
-	Vector _H1;
-	Vector _H2;
+	std::vector<Vector> _F;
+	std::vector<Vector> _H;
 
-	int idx_b0;
-	int idx_w0;
-	int idx_b1;
-	int idx_w1;
-	int _para_size;
+	std::vector<int> _idx_b;
+	std::vector<int> _idx_w;
+	size_t _para_size;
 
 	std::vector<int> _shuffledIdx;
 	std::vector<iMat> _train_data;
