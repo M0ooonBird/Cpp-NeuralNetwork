@@ -52,6 +52,13 @@ public:
 	// 导入所有训练数据
 	void LoadData(std::vector<iMat>&& data,
 		std::vector<iType>&& label, NN_Mode mode);
+
+	void SetHyperParameter(scalar alpha, scalar beta = 0.9, scalar gamma = 0.999)
+	{
+		_alpha = alpha;
+		_beta = beta;
+		_gamma = gamma;
+	}
 	void SetTrainParameter(int train_num, int batch, int epoch) 
 	{
 		_trainNum = train_num;
@@ -99,8 +106,8 @@ private:
 		}
 	}
 
-	scalar _alpha = 0.0002;
-	scalar _beta = 0.9;
+	scalar _alpha = 0.001; // leraning rate
+	scalar _beta = 0.9;	
 	scalar _gamma = 0.999;
 
 	int _L;

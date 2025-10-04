@@ -86,9 +86,8 @@ void NeuralNet::TrainEpoch()
 	{
 		printf("batch: %d,\t", t);
 		scalar Loss = 0;
-		// batch中依次取样本
+		// 新的梯度 清零
 		Vector Grad_p(_para_size);
-
 		std::vector<Vector> Grad_b;
 		std::vector<Matrix> Grad_w;
 		for (int i = 0; i < _L + 1; i++)
@@ -96,7 +95,7 @@ void NeuralNet::TrainEpoch()
 			Grad_b.emplace_back(Grad_p.data() + _idx_b[i], _LSizes[i+1]);
 			Grad_w.emplace_back(Grad_p.data() + _idx_w[i], _LSizes[i+1], _LSizes[i]);
 		}
-
+		// batch中依次取样本
 		for (int b = 0; b < _batchSize; b++)
 		{
 			int idx = _shuffledIdx[t * _batchSize + b];

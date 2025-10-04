@@ -16,10 +16,11 @@ int main(int argc, const char* argv[])
     NeuralNet* nn = new NeuralNet(3, { input, 256,128,128, output });
 
 #if 1   // 训练模式，自动训练NN参数
-    int train_num = 55000;  // 训练样本数量
-    int batch = 128;        // 批次大小
+    int train_num = 56000;  // 训练样本数量
+    int batch = 64;        // 批次大小
     int epoch = 20;         // 训练轮数
     nn->SetTrainParameter(train_num, batch, epoch);
+    nn->SetHyperParameter(0.001);
 
     // 导入训练集 一共60000个
     std::vector<iMat> train_data = read_mnist_images("train-images.idx3-ubyte");
@@ -39,8 +40,9 @@ int main(int argc, const char* argv[])
     nn->SetTestNum(test_num);
     nn->Test();
 
-#else   // 直接导入参数 (NN尺寸须匹配)
-    auto para =  load_parameters_binary("parameter.dat");
+#else   // 测试模式 直接导入参数 (NN尺寸须匹配)
+    std::string para_data = argv[1];
+    auto para =  load_parameters_binary(para_data);
     nn->SetNNParameter(para);
 
     // 导入测试集
@@ -51,7 +53,7 @@ int main(int argc, const char* argv[])
     nn->SetTestNum(test_num);
     nn->Test();*/
 
-    std::string path = argv[1];
+    std::string path = argv[2];
     auto image = preprocess_image(path);
     nn->Test(image);
 #endif
